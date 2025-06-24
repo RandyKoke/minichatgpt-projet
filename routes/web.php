@@ -41,6 +41,7 @@ Route::middleware([
     // Messages avec streaming
     Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
     Route::post('/conversations/{conversation}/stream', [MessageController::class, 'stream'])->name('messages.stream');
+    Route::post('/conversations/{conversation}/stream-title', [MessageController::class, 'streamTitle'])->name('messages.streamTitle');
 
     // Route pour le stream du titre en temps réel
     Route::post('/conversations/{conversation}/stream-title', [MessageController::class, 'streamTitle'])->name('messages.streamTitle');
