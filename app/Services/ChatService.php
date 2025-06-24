@@ -11,7 +11,6 @@ class ChatService
     private string $apiKey;
 
     private string $baseUrl;
-    private string $apiversion ='v1';
 
     private array $modelMapping = [
         'gpt-4o' => 'openai/gpt-4o',
