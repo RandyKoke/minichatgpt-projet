@@ -95,6 +95,9 @@ class MessageController extends Controller
         ]);
 
         return new StreamedResponse(function () use ($request, $conversation) {
+            set_time_limit(0);
+            ignore_user_abort(false);
+
             $fullResponse = '';
 
             try {
@@ -118,57 +121,82 @@ class MessageController extends Controller
                     ])
                     ->toArray();
 
-                $stream = $this->chatService->streamMessage(
+                $httpResponse = $this->chatService->streamMessage(
                     $request->message,
                     $conversation->model_used,
                     Auth::user(),
                     $context
                 );
 
-                $streamContent = $stream->body();
-                $lines = explode("\n", $streamContent);
+                if ($httpResponse->successful()) {
+                    // Lecture correcte du stream pour OpenRouter
+                    $responseBody = $httpResponse->body();
+                    $lines = explode("\n", $responseBody);
 
-                foreach ($lines as $line) {
-                    if (strpos($line, 'data: ') === 0) {
-                        $data = substr($line, 6);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
 
-                        if ($data === '[DONE]') {
-                            break;
-                        }
+                        if (strpos($line, 'data: ') === 0) {
+                            $data = trim(substr($line, 6));
 
-                        try {
-                            $json = json_decode($data, true);
-                            if (isset($json['choices'][0]['delta']['content'])) {
-                                $content = $json['choices'][0]['delta']['content'];
-                                $fullResponse .= $content;
-
-                                echo "data: " . json_encode(['content' => $content]) . "\n\n";
-                                ob_flush();
-                                flush();
-
-                                usleep(120000); // 120ms entre chaque token
+                            if ($data === '[DONE]') {
+                                break;
                             }
-                        } catch (\Exception $e) {
 
+                            if (empty($data)) continue;
+
+                            try {
+                                $json = json_decode($data, true);
+
+                                if (isset($json['choices'][0]['delta']['content'])) {
+                                    $content = $json['choices'][0]['delta']['content'];
+                                    $fullResponse .= $content;
+
+                                    echo "data: " . json_encode(['content' => $content]) . "\n\n";
+
+                                    if (ob_get_level()) {
+                                        ob_flush();
+                                    }
+                                    flush();
+
+                                    usleep(120000);
+                                }
+
+                                if (isset($json['choices'][0]['finish_reason']) && $json['choices'][0]['finish_reason'] === 'stop') {
+                                    break;
+                                }
+
+                            } catch (\Exception $e) {
+                                Log::warning('Erreur parsing JSON stream: ' . $e->getMessage());
+                                continue;
+                            }
                         }
                     }
+                } else {
+                    Log::error('Erreur API OpenRouter: ' . $httpResponse->body());
+                    echo "data: " . json_encode(['error' => 'Erreur API: ' . $httpResponse->status()]) . "\n\n";
                 }
 
-                $conversation->messages()->create([
-                    'role' => 'assistant',
-                    'content' => $fullResponse,
-                    'is_streaming' => true,
-                ]);
+                if (!empty($fullResponse)) {
+                    $conversation->messages()->create([
+                        'role' => 'assistant',
+                        'content' => $fullResponse,
+                        'is_streaming' => true,
+                    ]);
 
-                $conversation->touch();
+                    $conversation->touch();
+                }
 
                 echo "data: " . json_encode(['done' => true]) . "\n\n";
+
             } catch (\Exception $e) {
                 Log::error('Erreur streaming: ' . $e->getMessage());
-                echo "data: " . json_encode(['error' => 'Erreur lors de la génération de la réponse']) . "\n\n";
+                echo "data: " . json_encode(['error' => 'Erreur lors de la génération de la réponse: ' . $e->getMessage()]) . "\n\n";
             }
 
-            ob_flush();
+            if (ob_get_level()) {
+                ob_flush();
+            }
             flush();
         }, 200, [
             'Content-Type' => 'text/event-stream',
@@ -177,9 +205,6 @@ class MessageController extends Controller
             'X-Accel-Buffering' => 'no',
         ]);
     }
-
-
-      // Ma méthode pour le streaming du titre en temps réel
 
     public function streamTitle(Request $request, Conversation $conversation)
     {
@@ -192,41 +217,57 @@ class MessageController extends Controller
         }
 
         return new StreamedResponse(function () use ($conversation, $firstMessage) {
+            set_time_limit(0);
+
             $fullTitle = '';
 
             try {
-                $stream = $this->chatService->streamConversationTitle($firstMessage->content);
+                $httpResponse = $this->chatService->streamConversationTitle($firstMessage->content);
 
-                $streamContent = $stream->body();
-                $lines = explode("\n", $streamContent);
+                if ($httpResponse->successful()) {
+                    $responseBody = $httpResponse->body();
+                    $lines = explode("\n", $responseBody);
 
-                foreach ($lines as $line) {
-                    if (strpos($line, 'data: ') === 0) {
-                        $data = substr($line, 6);
+                    foreach ($lines as $line) {
+                        $line = trim($line);
 
-                        if ($data === '[DONE]') {
-                            break;
-                        }
+                        if (strpos($line, 'data: ') === 0) {
+                            $data = trim(substr($line, 6));
 
-                        try {
-                            $json = json_decode($data, true);
-                            if (isset($json['choices'][0]['delta']['content'])) {
-                                $content = $json['choices'][0]['delta']['content'];
-                                $fullTitle .= $content;
-
-                                echo "data: " . json_encode(['title' => $content]) . "\n\n";
-                                ob_flush();
-                                flush();
-
-                                // 200ms par mot
-                                usleep(200000);
+                            if ($data === '[DONE]') {
+                                break;
                             }
-                        } catch (\Exception $e) {
-                            // Important d'ignorer les erreurs de parsing JSON
+
+                            if (empty($data)) continue;
+
+                            try {
+                                $json = json_decode($data, true);
+
+                                if (isset($json['choices'][0]['delta']['content'])) {
+                                    $content = $json['choices'][0]['delta']['content'];
+                                    $fullTitle .= $content;
+
+                                    echo "data: " . json_encode(['title' => $content]) . "\n\n";
+
+                                    if (ob_get_level()) {
+                                        ob_flush();
+                                    }
+                                    flush();
+
+                                    usleep(200000);
+                                }
+
+                                if (isset($json['choices'][0]['finish_reason']) && $json['choices'][0]['finish_reason'] === 'stop') {
+                                    break;
+                                }
+
+                            } catch (\Exception $e) {
+                                Log::warning('Erreur parsing JSON titre: ' . $e->getMessage());
+                                continue;
+                            }
                         }
                     }
                 }
-
 
                 $finalTitle = $this->cleanAndValidateTitle(trim($fullTitle), $firstMessage->content);
 
@@ -236,9 +277,9 @@ class MessageController extends Controller
                 ]);
 
                 echo "data: " . json_encode(['done' => true, 'finalTitle' => $finalTitle]) . "\n\n";
+
             } catch (\Exception $e) {
                 Log::error('Erreur streaming titre: ' . $e->getMessage());
-                // Fallback vers le titre qui est généré normalement
                 $fallbackTitle = $this->chatService->generateConversationTitle($firstMessage->content);
                 $conversation->update([
                     'title' => $fallbackTitle,
@@ -247,7 +288,9 @@ class MessageController extends Controller
                 echo "data: " . json_encode(['done' => true, 'finalTitle' => $fallbackTitle]) . "\n\n";
             }
 
-            ob_flush();
+            if (ob_get_level()) {
+                ob_flush();
+            }
             flush();
         }, 200, [
             'Content-Type' => 'text/event-stream',
@@ -257,22 +300,16 @@ class MessageController extends Controller
         ]);
     }
 
-
-     // Nettoie et valide le titre streamé
-
     private function cleanAndValidateTitle(string $title, string $fallbackMessage): string
     {
-        // Supprimer la ponctuation pour que les titres soient plus cohérents
         $title = preg_replace('/["\'\(\)\[\]{}.,;:!?\/\\\\]/', '', $title);
         $title = preg_replace('/\s+/', ' ', trim($title));
 
-        // Je limite à 4 mots maximum
         $words = explode(' ', $title);
         if (count($words) > 4) {
             $title = implode(' ', array_slice($words, 0, 4));
         }
 
-        // Si le titre est vide ou trop court, on utilise un fallback
         if (strlen($title) < 3) {
             return $this->chatService->generateConversationTitle($fallbackMessage);
         }

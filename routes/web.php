@@ -32,21 +32,20 @@ Route::middleware([
         return redirect()->route('chat.index');
     })->name('dashboard');
 
-    // Ma page principale avec l'interface de Chat
+    // page principale
     Route::get('/chat', [ConversationController::class, 'index'])->name('chat.index');
     Route::post('/conversations', [ConversationController::class, 'store'])->name('conversations.store');
     Route::get('/conversations/{conversation}', [ConversationController::class, 'show'])->name('conversations.show');
     Route::delete('/conversations/{conversation}', [ConversationController::class, 'destroy'])->name('conversations.destroy');
 
-    // Messages avec streaming
+    // messages avec streaming
     Route::post('/conversations/{conversation}/messages', [MessageController::class, 'store'])->name('messages.store');
     Route::post('/conversations/{conversation}/stream', [MessageController::class, 'stream'])->name('messages.stream');
+
+    // route pour le stream en live
     Route::post('/conversations/{conversation}/stream-title', [MessageController::class, 'streamTitle'])->name('messages.streamTitle');
 
-    // Route pour le stream du titre en temps réel
-    Route::post('/conversations/{conversation}/stream-title', [MessageController::class, 'streamTitle'])->name('messages.streamTitle');
-
-    // Modal pour les instrctions personnalisées
+    // api pour modal
     Route::prefix('api/instructions')->name('instructions.')->group(function () {
         Route::get('/', [CustomInstructionController::class, 'get'])->name('get');
         Route::post('/', [CustomInstructionController::class, 'storeApi'])->name('store.api');
@@ -54,13 +53,13 @@ Route::middleware([
         Route::get('/status', [CustomInstructionController::class, 'status'])->name('status');
     });
 
-    // Les pages que j'ai conservées
+    // pages que j'ai conservées
     Route::get('/ask', [AskController::class, 'index'])->name('ask.index');
     Route::post('/ask', [AskController::class, 'ask'])->name('ask.send');
     Route::get('/instructions', [CustomInstructionController::class, 'index'])->name('instructions.index');
     Route::post('/instructions', [CustomInstructionController::class, 'store'])->name('instructions.store');
 
-
+    // api utilitaires
     Route::get('/api/user/stats', function () {
         $user = Auth::user();
         return response()->json([

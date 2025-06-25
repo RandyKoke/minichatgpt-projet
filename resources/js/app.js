@@ -4,7 +4,17 @@ import '../css/app.css';
 import { createApp, h } from 'vue';
 import { createInertiaApp } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
-import { ZiggyVue } from '../../vendor/tightenco/ziggy';
+import { ZiggyVue } from 'ziggy-js';
+
+// Je place ici un gestionnaire d'erreurs pour les extensions de navigateur
+window.addEventListener('unhandledrejection', (event) => {
+    if (event.reason && event.reason.message &&
+        event.reason.message.includes('message channel closed')) {
+        event.preventDefault();
+        console.warn('Erreur d\'extension ignorée');
+        return false;
+    }
+});
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

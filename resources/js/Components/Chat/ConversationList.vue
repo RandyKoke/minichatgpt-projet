@@ -9,7 +9,7 @@
                 :href="route('conversations.show', conversation)"
                 class="block p-3 rounded-lg hover:bg-gray-100 transition-colors"
             >
-                <!-- div pour l'affichage du titre en live -->
+                <!-- affichage du titre streamé en live -->
                 <div class="font-medium text-gray-900 truncate">
                     <span>{{ getDisplayTitle(conversation) }}</span>
                     <!-- Curseur clignotant pendant le streaming -->
@@ -45,7 +45,7 @@
             </button>
         </div>
 
-        <!-- Message s'il n'y aucune conversation -->
+        <!-- Message si aucune conversation -->
         <div v-if="conversations.length === 0" class="text-gray-500 text-center py-8">
             Aucune conversation pour le moment.
             <br>
@@ -74,7 +74,7 @@ const props = defineProps({
 
 
 const getDisplayTitle = (conversation) => {
-    // Si un titre est en cours de streaming pour cette conversation, il est affiché
+    // Si un titre est en cours de streaming pour cette conversation, on l'affiche
     if (props.streamingTitles[conversation.id]) {
         return props.streamingTitles[conversation.id]
     }
@@ -83,7 +83,7 @@ const getDisplayTitle = (conversation) => {
     return conversation.title || 'Nouvelle conversation'
 }
 
-// Vérifie si le titre est en cours de streaming
+// on vérifie si le titre est bien streamé
 const isCurrentlyStreaming = (conversationId) => {
     return props.streamingTitles[conversationId] &&
            props.streamingTitles[conversationId] !== '' &&
@@ -117,3 +117,4 @@ const getModelLabel = (modelValue) => {
     return props.models[modelValue] || modelValue
 }
 </script>
+

@@ -48,7 +48,6 @@ class ConversationController extends Controller
         ]);
     }
 
-    // J'ai modifié STORE pour retourner JSON sans redirection
     public function store(Request $request)
     {
         $request->validate([
@@ -61,17 +60,15 @@ class ConversationController extends Controller
 
             $conversation = Auth::user()->conversations()->create([
                 'model_used' => $request->model ?? 'gpt-3.5-turbo',
-                'title' => 'Nouvelle conversation', // Titre temporaire
+                'title' => 'Nouvelle conversation',
             ]);
 
-            // Si un premier message est fourni, il est traité directement ici
             if ($request->first_message) {
-                $userMessage = $conversation->messages()->create([
+                $conversation->messages()->create([
                     'role' => 'user',
                     'content' => $request->first_message,
                 ]);
 
-                //  Le titre via un appel à l'API
                 $title = $this->chatService->generateConversationTitle($request->first_message);
                 $conversation->update([
                     'title' => $title,
@@ -81,20 +78,40 @@ class ConversationController extends Controller
 
             DB::commit();
 
-            //  On retourne encore JSON afin d'éviter la redirection
-            return response()->json([
-                'success' => true,
-                'conversation' => $conversation->load('messages')
-            ]);
+            // Detection precise des requetes AJAX vs Inertia
+            $isAjaxRequest = $request->ajax() ||
+                           $request->wantsJson() ||
+                           $request->header('X-Requested-With') === 'XMLHttpRequest' ||
+                           $request->header('Content-Type') === 'application/json';
+
+            if ($isAjaxRequest) {
+                return response()->json([
+                    'success' => true,
+                    'conversation' => $conversation->load('messages')
+                ]);
+            }
+
+            // Pour les requetes Inertia, redirection vers la page de conversation
+            return redirect()->route('conversations.show', $conversation)
+                           ->with('message', 'Nouvelle conversation créée avec succès.');
 
         } catch (\Exception $e) {
             DB::rollback();
             Log::error('Erreur création conversation: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Erreur lors de la création de la conversation'
-            ], 500);
+            $isAjaxRequest = $request->ajax() ||
+                           $request->wantsJson() ||
+                           $request->header('X-Requested-With') === 'XMLHttpRequest' ||
+                           $request->header('Content-Type') === 'application/json';
+
+            if ($isAjaxRequest) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Erreur lors de la création de la conversation'
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Erreur lors de la création de la conversation');
         }
     }
 

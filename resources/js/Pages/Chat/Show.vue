@@ -9,7 +9,7 @@
                     :href="route('chat.index')"
                     class="text-indigo-600 hover:text-indigo-800"
                 >
-                    ← Retour aux conversations
+                    ← Retour
                 </Link>
             </div>
         </template>
@@ -18,14 +18,13 @@
             <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
                     <div class="flex flex-col h-[700px]">
-                        <!-- Header avec sélecteur de modèle -->
+                        <!-- Header -->
                         <div class="p-4 border-b border-gray-200 bg-gray-50">
                             <div class="flex items-center justify-between">
                                 <ModelSelector
                                     v-model="selectedModel"
                                     :models="models"
                                     label="Modèle :"
-                                    id="conversationModel"
                                 />
                                 <div class="text-sm text-gray-500">
                                     {{ conversation.messages.length }} message{{ conversation.messages.length > 1 ? 's' : '' }}
@@ -33,7 +32,7 @@
                             </div>
                         </div>
 
-                        <!-- Liste des messages -->
+                        <!-- Messages -->
                         <MessagesList
                             :messages="conversation.messages"
                             :is-typing="isTyping"
@@ -46,24 +45,19 @@
                                 <textarea
                                     v-model="newMessage"
                                     @keydown.enter.exact.prevent="sendMessage"
-                                    @keydown.enter.shift.exact="addNewLine"
+                                    @keydown.enter.shift.exact="newMessage += '\n'"
                                     rows="1"
                                     class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 resize-none"
-                                    placeholder="Tapez votre message... (Entrée pour envoyer, Shift+Entrée pour nouvelle ligne)"
+                                    placeholder="Tapez votre message..."
                                     :disabled="!isReady"
                                 ></textarea>
                                 <button
                                     type="submit"
                                     :disabled="!isReady || !newMessage.trim()"
-                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    class="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
                                 >
-                                    <svg v-if="processing" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                    </svg>
-                                    <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
-                                    </svg>
+                                    <div v-if="processing" class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></div>
+                                    <div v-else class="w-5 h-5 border-2 border-white border-l-0 border-t-0 transform rotate-45"></div>
                                 </button>
                             </form>
                         </div>
@@ -111,9 +105,5 @@ const sendMessage = async () => {
     newMessage.value = ''
 
     await streamMessage(message, props.conversation.id, selectedModel.value)
-}
-
-const addNewLine = () => {
-    newMessage.value += '\n'
 }
 </script>
