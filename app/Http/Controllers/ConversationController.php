@@ -78,11 +78,10 @@ class ConversationController extends Controller
 
             DB::commit();
 
-            // Detection precise des requetes AJAX vs Inertia
-            $isAjaxRequest = $request->ajax() ||
-                           $request->wantsJson() ||
-                           $request->header('X-Requested-With') === 'XMLHttpRequest' ||
-                           $request->header('Content-Type') === 'application/json';
+            // Détection améliorée : si c'est une requête AJAX explicite
+            $isAjaxRequest = $request->header('X-Requested-With') === 'XMLHttpRequest' ||
+                           $request->header('Content-Type') === 'application/json' ||
+                           ($request->wantsJson() && $request->ajax());
 
             if ($isAjaxRequest) {
                 return response()->json([
@@ -91,7 +90,7 @@ class ConversationController extends Controller
                 ]);
             }
 
-            // Pour les requetes Inertia, redirection vers la page de conversation
+            // Pour toutes les autres requêtes (y compris Inertia), redirection
             return redirect()->route('conversations.show', $conversation)
                            ->with('message', 'Nouvelle conversation créée avec succès.');
 
@@ -99,10 +98,9 @@ class ConversationController extends Controller
             DB::rollback();
             Log::error('Erreur création conversation: ' . $e->getMessage());
 
-            $isAjaxRequest = $request->ajax() ||
-                           $request->wantsJson() ||
-                           $request->header('X-Requested-With') === 'XMLHttpRequest' ||
-                           $request->header('Content-Type') === 'application/json';
+            $isAjaxRequest = $request->header('X-Requested-With') === 'XMLHttpRequest' ||
+                           $request->header('Content-Type') === 'application/json' ||
+                           ($request->wantsJson() && $request->ajax());
 
             if ($isAjaxRequest) {
                 return response()->json([

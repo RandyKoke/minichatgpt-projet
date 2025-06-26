@@ -129,7 +129,6 @@ class MessageController extends Controller
                 );
 
                 if ($httpResponse->successful()) {
-                    // Lecture correcte du stream pour OpenRouter
                     $responseBody = $httpResponse->body();
                     $lines = explode("\n", $responseBody);
 
@@ -280,7 +279,15 @@ class MessageController extends Controller
 
             } catch (\Exception $e) {
                 Log::error('Erreur streaming titre: ' . $e->getMessage());
-                $fallbackTitle = $this->chatService->generateConversationTitle($firstMessage->content);
+
+                // Utilisation du service pour générer un titre de fallback intelligent
+                try {
+                    $fallbackTitle = $this->chatService->generateConversationTitle($firstMessage->content);
+                } catch (\Exception $fallbackError) {
+                    // Si même le fallback échoue, utiliser le début du message
+                    $fallbackTitle = $this->generateSimpleFallbackTitle($firstMessage->content);
+                }
+
                 $conversation->update([
                     'title' => $fallbackTitle,
                     'title_generated' => true
@@ -302,18 +309,40 @@ class MessageController extends Controller
 
     private function cleanAndValidateTitle(string $title, string $fallbackMessage): string
     {
-        $title = preg_replace('/["\'\(\)\[\]{}.,;:!?\/\\\\]/', '', $title);
+        // Nettoyage moins agressif
+        $title = preg_replace('/["\'\[\]{}.,;:!?\/\\\\]/', '', $title);
         $title = preg_replace('/\s+/', ' ', trim($title));
 
         $words = explode(' ', $title);
-        if (count($words) > 4) {
-            $title = implode(' ', array_slice($words, 0, 4));
+        if (count($words) > 5) {
+            $title = implode(' ', array_slice($words, 0, 5));
         }
 
-        if (strlen($title) < 3) {
-            return $this->chatService->generateConversationTitle($fallbackMessage);
+        // Validation moins stricte : accepter même les titres courts
+        if (strlen(trim($title)) < 2) {
+            try {
+                return $this->chatService->generateConversationTitle($fallbackMessage);
+            } catch (\Exception $e) {
+                return $this->generateSimpleFallbackTitle($fallbackMessage);
+            }
         }
 
         return $title;
+    }
+
+    private function generateSimpleFallbackTitle(string $message): string
+    {
+        // Extraction des mots clés importants
+        $words = explode(' ', trim($message));
+        $keyWords = array_filter($words, function($word) {
+            return strlen($word) > 3 && !in_array(strtolower($word), [
+                'comment', 'quoi', 'que', 'est-ce', 'quel', 'quelle', 'quels', 'quelles',
+                'pourquoi', 'où', 'quand', 'qui', 'dont', 'lequel', 'dans', 'avec', 'pour',
+                'what', 'how', 'when', 'where', 'why', 'who', 'which'
+            ]);
+        });
+
+        $title = implode(' ', array_slice($keyWords, 0, 3));
+        return $title ?: substr($message, 0, 30) . (strlen($message) > 30 ? '...' : '');
     }
 }

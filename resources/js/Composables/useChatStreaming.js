@@ -53,19 +53,44 @@ export function useChatStreaming() {
                             }
                             if (data.done) {
                                 const finalTitle = data.finalTitle || fullTitle.trim()
-                                streamingTitles.value[conversationId] = finalTitle
+
+                                // Ne pas remplacer par "Nouvelle conversation" - garder le titre généré
+                                if (finalTitle && finalTitle !== 'Nouvelle conversation') {
+                                    streamingTitles.value[conversationId] = finalTitle
+
+                                    // Mettre à jour le titre dans la liste des conversations
+                                    const conversations = window.conversationsList || []
+                                    const conversation = conversations.find(c => c.id === conversationId)
+                                    if (conversation) {
+                                        conversation.title = finalTitle
+                                    }
+                                }
 
                                 setTimeout(() => {
                                     delete streamingTitles.value[conversationId]
                                 }, 2000)
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            console.warn('Erreur parsing titre JSON:', e)
+                        }
                     }
                 }
             }
         } catch (error) {
             console.error('Erreur streaming titre:', error)
-            streamingTitles.value[conversationId] = 'Nouvelle conversation'
+
+            // Ne plus forcer "Nouvelle conversation" - laisser le titre tel quel
+            // ou essayer de générer un titre simple à partir du premier message
+            const conversations = window.conversationsList || []
+            const conversation = conversations.find(c => c.id === conversationId)
+
+            if (conversation && conversation.messages && conversation.messages.length > 0) {
+                const firstMessage = conversation.messages[0].content
+                const words = firstMessage.split(' ').slice(0, 3).join(' ')
+                const fallbackTitle = words || 'Discussion'
+                streamingTitles.value[conversationId] = fallbackTitle
+                conversation.title = fallbackTitle
+            }
         }
     }
 
@@ -123,7 +148,9 @@ export function useChatStreaming() {
                             if (data.error) {
                                 throw new Error(data.error)
                             }
-                        } catch (e) {}
+                        } catch (e) {
+                            console.warn('Erreur parsing message JSON:', e)
+                        }
                     }
                 }
             }
@@ -161,10 +188,15 @@ export function useChatStreaming() {
                     id: data.conversation.id,
                     title: 'Nouvelle conversation',
                     model_used: model,
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    messages: []
                 }
 
                 conversations.unshift(newConversation)
+
+                // Rendre la liste accessible globalement pour les mises à jour de titre
+                window.conversationsList = conversations
+
                 return data.conversation.id
             }
 
