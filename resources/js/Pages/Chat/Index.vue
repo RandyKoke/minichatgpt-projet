@@ -40,13 +40,7 @@
                             <div class="p-4 border-b border-gray-200">
                                 <div class="flex items-center justify-between mb-4">
                                     <h3 class="text-lg font-semibold text-gray-900">Conversations</h3>
-                                    <button
-                                        @click="createConversation"
-                                        :disabled="processing"
-                                        class="bg-indigo-600 text-white px-3 py-1 rounded-md text-sm hover:bg-indigo-700 disabled:opacity-50"
-                                    >
-                                        Nouvelle
-                                    </button>
+
                                 </div>
 
                                 <ModelSelector
