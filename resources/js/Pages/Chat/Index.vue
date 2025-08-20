@@ -210,7 +210,7 @@ const {
 
 const hasMessages = computed(() => currentMessages.value.length > 0)
 
-// Bouton Nouvelle - Utilise Inertia pour navigation simple
+// Bouton nouvelle - utilise Inertia pour une navigation toute simple
 const createConversation = () => {
     if (processing.value) return
 
@@ -224,7 +224,7 @@ const createConversation = () => {
     })
 }
 
-// Envoi de message - Utilise AJAX pour streaming
+// Envoi de message - utilisation de AJAX pour le streaming
 const sendMessage = async () => {
     if (!newMessage.value.trim() || processing.value) return
 

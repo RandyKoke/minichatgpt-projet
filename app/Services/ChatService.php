@@ -49,13 +49,13 @@ class ChatService
                         'content' => 'Tu es un expert en création de titres courts. Génère un titre de 2 à 4 mots maximum qui résume parfaitement la question posée.
 
 EXEMPLES PARFAITS:
-"Quelle est la capitale de la France ?" → "Capitale France"
-"Comment faire du pain ?" → "Recette Pain"
+"Quelle est la capitale de la France ?" → "Capitale de la France"
+"Comment faire du pain ?" → "Recette de pain"
 "Qui a inventé l\'ordinateur ?" → "Inventeur Ordinateur"
-"Quelle est la deuxième ville la plus peuplée de la Belgique après Bruxelles ?" → "Anvers Belgique"
+"Quelle est la deuxième ville la plus peuplée de la Belgique après Bruxelles ?" → "Anvers en Belgique"
 
 RÈGLES:
-- Maximum 4 mots
+- Maximum 5 mots
 - Pas de ponctuation
 - Mots clés essentiels seulement
 - Réponse directe sans explication

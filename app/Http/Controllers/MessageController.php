@@ -284,7 +284,7 @@ class MessageController extends Controller
                 try {
                     $fallbackTitle = $this->chatService->generateConversationTitle($firstMessage->content);
                 } catch (\Exception $fallbackError) {
-                    // Si même le fallback échoue, utiliser le début du message
+                    // Si même le fallback échoue, on utilise le début du message
                     $fallbackTitle = $this->generateSimpleFallbackTitle($firstMessage->content);
                 }
 
@@ -318,7 +318,7 @@ class MessageController extends Controller
             $title = implode(' ', array_slice($words, 0, 5));
         }
 
-        // Validation moins stricte : accepter même les titres courts
+        // Validation moins stricte : ici on accepte même les titres courts
         if (strlen(trim($title)) < 2) {
             try {
                 return $this->chatService->generateConversationTitle($fallbackMessage);
@@ -338,7 +338,7 @@ class MessageController extends Controller
             return strlen($word) > 3 && !in_array(strtolower($word), [
                 'comment', 'quoi', 'que', 'est-ce', 'quel', 'quelle', 'quels', 'quelles',
                 'pourquoi', 'où', 'quand', 'qui', 'dont', 'lequel', 'dans', 'avec', 'pour',
-                'what', 'how', 'when', 'where', 'why', 'who', 'which'
+                'what', 'how', 'when', 'where', 'why', 'who', 'which', 'waar', 'wanner'
             ]);
         });
 

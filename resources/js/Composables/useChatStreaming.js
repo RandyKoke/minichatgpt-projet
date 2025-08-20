@@ -79,8 +79,8 @@ export function useChatStreaming() {
         } catch (error) {
             console.error('Erreur streaming titre:', error)
 
-            // Ne plus forcer "Nouvelle conversation" - laisser le titre tel quel
-            // ou essayer de générer un titre simple à partir du premier message
+            // Ici, one force plus le "Nouvelle conversation" - laisser le titre tel quel
+            // ou on essaie de générer un titre simple à partir du premier message
             const conversations = window.conversationsList || []
             const conversation = conversations.find(c => c.id === conversationId)
 
